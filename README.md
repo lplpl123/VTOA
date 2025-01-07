@@ -21,6 +21,12 @@ VTOA是一个处理音频的windows桌面app。可实现音频提取、格式转
 # requirements
 * pyqt5
 
+# exe程序文件
+* 想直接下载exe程序文件，请访问下面链接:
+
+通过网盘分享的文件：VTOA_20250107.zip
+链接: https://pan.baidu.com/s/1vPsR7DScKEbj6LIp8cbquw 提取码: hqpj
+
 # 更新日志
 2024-12-20
 * 支持自定义保存输出文件
