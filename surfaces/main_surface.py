@@ -14,6 +14,7 @@ class MainSurface:
         self._setup_main_frame()
         self._setup_frames()
         self._setup_title_frame_widgets()
+        self._setup_work_frame_widgets()
 
     def _setup_main_frame(self):
         self.main_frame = QFrame(self.main_window)
@@ -28,10 +29,10 @@ class MainSurface:
                                         background-color: black;
                                         """)
         # work_frame
-        self.work_frame = QFrame(self.main_frame)
+        self.work_frame = custom_qwidget.MyWorkFrame(self.main_frame)
         self.work_frame.setStyleSheet("""
                                         background-color: white;
-                                        """)
+                                    """)
         # layout
         self.tol_vertical_layout = QVBoxLayout(self.main_frame)
         self.tol_vertical_layout.setSpacing(0)
@@ -39,7 +40,7 @@ class MainSurface:
         self.tol_vertical_layout.addWidget(self.title_frame)
         self.tol_vertical_layout.addWidget(self.work_frame)
         self.tol_vertical_layout.setStretch(0, 1)
-        self.tol_vertical_layout.setStretch(1, 10)
+        self.tol_vertical_layout.setStretch(1, 11)
 
     def _setup_title_frame_widgets(self):
         """init title frame widgets"""
@@ -77,5 +78,19 @@ class MainSurface:
         self.title_horizontal_layout.setSpacing(0)
         self.title_horizontal_layout.setContentsMargins(0, 0, 0, 0)
 
-
+    def _setup_work_frame_widgets(self):
+        # work_background_lable
+        self.background = QLabel(self.work_frame)
+        self.background.setStyleSheet("border-image:url(./resources/background.png);")
+        self.background_layout = QVBoxLayout(self.work_frame)
+        self.background_layout.addWidget(self.background)
+        self.background_layout.setContentsMargins(0, 0, 0, 0)
+        # work_start_button
+        self.start_button = custom_qwidget.MyQLabel(self.background)
+        self.start_button.setText("开始")
+        self.start_button.setMinimumSize(200, 50)
+        # layout
+        self.blank_vertical_layout = QVBoxLayout(self.background)
+        self.blank_vertical_layout.addWidget(self.start_button)
+        self.blank_vertical_layout.setAlignment(Qt.AlignCenter)
 

@@ -1,95 +1,154 @@
 import os
-import sys
 import shutil
 import subprocess
 from moviepy.editor import VideoFileClip
 from PyQt5.Qt import QFileDialog
+from tools.storage import Storage
 
-
-def read_file_path(file_type):
-    file_path = QFileDialog.getOpenFileName(None, "请从本地上传完成的任务......",
-                                            "./", f"(*.*);;(*.{file_type})")
-    file_path = file_path[0]
-    file_name = file_path.split("/")[-1]
-    return file_path, file_name
-
-def get_temp_file_info():
-    file_list = os.listdir("./temp/")
-    file_name = file_list[0]
-    source_path = "./temp/" + file_name
-    return file_name, source_path
 
 def get_default_output_path():
     default_output_path = os.path.join(os.path.expanduser("~"), f"Downloads\\")
     default_output_path = os.path.normpath(default_output_path)
     return default_output_path
 
-def save_file(source_path, output_path):
-    shutil.copy(source_path, output_path)
+def get_temp_output_folder():
+    temp_output_folder = os.path.normpath(".\\cache")
+    temp_output_folder = os.path.normpath(temp_output_folder)
+    return  temp_output_folder
 
-def custom_save_file(source_path, output_path):
+
+
+def select_file_path(select_type):
+
+    video_file_types = Storage().get_info("video_file_types")
+    audio_file_types = Storage().get_info("audio_file_types")
+    can_select_formats = ""
+
+    if select_type == "video":
+        for can_select_format in video_file_types:
+            can_select_formats += f"(*.{can_select_format});;"
+
+    elif select_type == "audio":
+        for can_select_format in audio_file_types:
+            can_select_formats += f"(*.{can_select_format});;"
+
+
+    file_path = QFileDialog.getOpenFileName(None, "请从本地上传完成的任务......",
+                                            "./", can_select_formats)
+    file_path = file_path[0]
+
+    if file_path != '':
+        file_path = os.path.normpath(file_path)
+        file_total_name = file_path.split("\\")[-1]
+        file_name = file_total_name.rsplit(".", 1)[0]
+
+        Storage().store_info("selected_file_path", file_path)
+        Storage().store_info("selected_file_total_name", file_total_name)
+        Storage().store_info("selected_file_name", file_name)
+
+        return True
+    return False
+
+
+def clear_store_info():
     try:
-        shutil.copy(source_path, output_path)
-    except Exception as e:
-        print(e)
+        Storage().clear_info("selected_file_path")
+        Storage().clear_info("final_output_folder")
+        Storage().clear_info("final_output_format")
+        Storage().clear_info("final_output_path")
+        Storage().clear_info("temp_output_path")
+        Storage().clear_info("selected_file_path")
+        Storage().clear_info("selected_file_total_name")
+        Storage().clear_info("selected_file_name")
+        print("clear completed")
 
-def transfer_video2audio(file_path, output_type, file_name):
-    # 视频转音频
-    file_name = file_name[:-4]
-    # 默认视频转mp3
-    video2audio_output_file = "./temp/" + file_name + ".mp3"
-    audio_clip = VideoFileClip(file_path)
-    audio_clip.audio.write_audiofile(video2audio_output_file)
-    audio_clip.close()
-    if output_type != "mp3":
-    # 音频如果用户输入了格式，就进行转换
-        # setting ffmpeg
-        project_dir = os.path.dirname(sys.argv[0])
-        project_dir = os.path.normpath(project_dir)
-        ffmpeg_path = os.path.join(project_dir, "ffmpeg/bin/ffmpeg")
-        ffmpeg_path = os.path.normpath(ffmpeg_path)
-        # setting file path
-        input_file_path = project_dir + "\\temp\\" + file_name + ".mp3"
-        output_file_path = project_dir + "\\temp\\" + file_name + "." + output_type
-        # run
-        subprocess.run(f'{ffmpeg_path} -i "{input_file_path}" "{output_file_path}"', shell=True,
-                       stdout=subprocess.PIPE, text=True)
+    except Exception as E:
+        print(E)
 
-def audio_transfer(file_path, output_type, file_name):
-    file_name = file_name.rsplit(".", 1)[0]
-    # setting  ffmpeg
-    project_dir = os.path.dirname(sys.argv[0])
-    project_dir = os.path.normpath(project_dir)
-    ffmpeg_path = os.path.join(project_dir, "ffmpeg/bin/ffmpeg")
-    ffmpeg_path = os.path.normpath(ffmpeg_path)
-    # setting file path
-    input_file_path = os.path.normpath(file_path)
-    output_file_path = project_dir + "\\temp\\" + file_name + "." + output_type
-    # run
-    subprocess.run(f'{ffmpeg_path} -i "{input_file_path}" "{output_file_path}"', shell=True,
-                   stdout=subprocess.PIPE, text=True)
-
-def noise_reduce(file_path, output_path):
-    project_dir = os.path.dirname(sys.argv[0])
-    project_dir = os.path.normpath(project_dir)
-    ffmpeg_path = os.path.join(project_dir, "ffmpeg/bin/ffmpeg")
-    ffmpeg_path = os.path.normpath(ffmpeg_path)
-    subprocess.run(f'{ffmpeg_path} -i "{file_path}" -af "afftdn=nr=30" "{output_path}"', shell=True,
-                   stdout=subprocess.PIPE, text=True)
-
-def check_if_file_exists(output_path):
+def check_if_output_file_exists():
+    output_path = Storage().get_info("final_output_path")
     return os.path.exists(output_path)
 
-def clear_cache():
-    # 删除临时文件
-    shutil.rmtree("./temp")
-    os.mkdir("./temp")
+"""
+    后端函数
+"""
+def transfer_video2audio():
 
-def reset_pre_frame(current_frame):
-    current_frame.work_select_label_index = 0
-    current_frame.work_tip_label_index = 0
-    current_frame.work_select_label.hide()
-    current_frame.work_outputs_selection.hide()
+    original_file_path = Storage().get_info("selected_file_path")
+    audio_clip = VideoFileClip(original_file_path)
+    output_file_path = Storage().get_info("final_output_path")
+    temp_file_path = Storage().get_info("temp_output_path")
+    temp_output_path_mp3 = Storage().get_info("temp_output_path_mp3")
+
+
+    if Storage().get_info("final_output_format") == "mp3":
+
+        audio_clip.audio.write_audiofile(temp_file_path)
+
+    else:
+        ffmpeg_path = Storage().get_info("ffmpeg_path")
+
+        audio_clip.audio.write_audiofile(temp_output_path_mp3)
+
+        subprocess.run(f'{ffmpeg_path} -i "{temp_output_path_mp3}" "{temp_file_path}"', shell=True,
+                       stdout=subprocess.PIPE, text=True)
+
+        os.remove(temp_output_path_mp3)
+
+    shutil.move(temp_file_path, output_file_path)
+    audio_clip.close()
+
+def audio_transfer():
+
+    original_file_path = Storage().get_info("selected_file_path")
+    output_file_path = Storage().get_info("final_output_path")
+
+    ffmpeg_path = Storage().get_info("ffmpeg_path")
+
+    temp_file_path = Storage().get_info("temp_output_path")
+
+    subprocess.run(f'{ffmpeg_path} -i "{original_file_path}" "{temp_file_path}"', shell=True,
+                   stdout=subprocess.PIPE, text=True)
+
+    shutil.move(temp_file_path, output_file_path)
+
+
+def voice_split():
+    original_file_path = Storage().get_info("selected_file_path")
+    output_file_path = Storage().get_info("final_output_path")
+
+    spleeter_path = Storage().get_info("spleeter_path")
+
+    subprocess.run(f'{spleeter_path} "{original_file_path}"', shell=True,
+                   stdout=subprocess.PIPE, text=True)
+
+    path_list = original_file_path.rsplit(".", 1)
+    temp_output_path = path_list[0] + ".vocals.mp3"
+    other_path_file = path_list[0] + ".accompaniment.mp3"
+    os.remove(other_path_file)
+    shutil.move(temp_output_path, output_file_path)
+
+def bgm_split():
+    original_file_path = Storage().get_info("selected_file_path")
+    output_file_path = Storage().get_info("final_output_path")
+
+    spleeter_path = Storage().get_info("spleeter_path")
+
+    subprocess.run(f'{spleeter_path} "{original_file_path}"', shell=True,
+                   stdout=subprocess.PIPE, text=True)
+
+    path_list = original_file_path.rsplit(".", 1)
+    temp_output_path = path_list[0] + ".accompaniment.mp3"
+    other_path_file = path_list[0] + ".vocals.mp3"
+    os.remove(other_path_file)
+    shutil.move(temp_output_path, output_file_path)
+
+
+"""end"""
+
+
+
+
 
 
 

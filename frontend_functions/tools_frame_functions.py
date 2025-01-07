@@ -1,71 +1,132 @@
-from PyQt5.QtCore import QTimer
+from tools.storage import Storage
+from tools import backend_function
 from frontend_functions.extract_frame_functions import ExtractFrameFunctions
 from frontend_functions.audio_transfer_frame_functions import AudioTransferFrameFunctions
+from frontend_functions.voice_split_frame_functions import VoiceSplitFrameFunctions
+from frontend_functions.bgm_split_frame_functions import BgmSplitFrameFunctions
 
 
 class ToolsFrameFunctions():
 
     def __init__(self, frame_dict):
-        self.start_frame = frame_dict["start_frame"]
+
+        self.last_show_frame = None
+        self.current_show_frame = None
+
         self.tools_frame = frame_dict["tools_frame"]
-        self.audio_transfer_frame = frame_dict["audio_transfer_frame"]
         self.extract_frame = frame_dict["extract_frame"]
+        self.audio_transfer_frame = frame_dict["audio_transfer_frame"]
+        self.voice_split_frame = frame_dict["voice_split_frame"]
+        self.bgm_split_frame = frame_dict["bgm_split_frame"]
+
+        storage = Storage()
+        storage.store_info("frame_dict", frame_dict)
+
         self.extract_frame_functions = ExtractFrameFunctions(frame_dict)
         self.audio_transfer_frame_functions = AudioTransferFrameFunctions(frame_dict)
+        self.voice_split_frame_functions = VoiceSplitFrameFunctions(frame_dict)
+        self.bgm_split_frame_functions = BgmSplitFrameFunctions(frame_dict)
+
+        # qss
+        self.selected_qss = """
+                    QWidget{
+                            font-family: "微软雅黑";
+                            font-size: 25px;
+                            color: white;
+                            border-radius:5px;
+                            border-image:none;
+                            background-color:black;
+                            border:5px solid white;}
+                            """
+        self.origin_qss = """
+                    QWidget{
+                            font-family: "微软雅黑";
+                            font-size: 25px;
+                            color: white;
+                            border-radius:5px;
+                            border-image:none;
+                            background-color:black;}
+                            
+                            QLabel:hover{
+                            border:3px solid white;}
+                            """
 
     def _bind_functions(self):
-        self.tools_frame.work_extract_button.clicked.connect(lambda: self.work_extract_button_function())
-        self.tools_frame.work_audio_transfer_button.clicked.connect(self.work_audio_transfer_button_function)
-        self.tools_frame.work_voice_transfer_button.clicked.connect(self.work_extract_button_function)
-        self.tools_frame.work_audio_cut_button.clicked.connect(self.work_extract_button_function)
-        self.tools_frame.work_video_cut_button.clicked.connect(self.work_extract_button_function)
-        self.tools_frame.work_video_transfer_button.clicked.connect(self.work_video_transfer_button_function)
-        self.tools_frame.work_denoise_button.clicked.connect(self.work_denoise_button_function)
-        self.tools_frame.work_split_button.clicked.connect(self.work_split_button_function)
-        self.tools_frame.work_back_button.clicked.connect(self.work_back_button_function)
 
-    def work_extract_button_function(self):
-        self.tools_frame.tools_frame.hide()
-        self.extract_frame._setup_work_extract_frame_widgets() # 应该包含了展示frame的作用
-        self.extract_frame_functions._bind_functions()
+        self.tools_frame.tools_extract_button.clicked.connect(lambda: self.tools_extract_button_function())
+        self.tools_frame.tools_audio_transfer_button.clicked.connect(self.work_audio_transfer_button_function)
+        self.tools_frame.tools_voice_split_button.clicked.connect(self.work_voice_split_button_function)
+        self.tools_frame.tools_bgm_split_button.clicked.connect(self.work_bgm_split_button_function)
+        self.tools_frame.work_layout.removeWidget(self.tools_frame.work_blank_label)
+
+        self.current_show_frame = None
+        self.tools_extract_button_function()
+
+#region
+    def tools_extract_button_function(self):
+
+        if self.current_show_frame == self.extract_frame:
+            return
+
+        backend_function.clear_store_info()
+
+        self.change_frame(self.extract_frame, self.extract_frame_functions,
+                          self.tools_frame.tools_extract_button)
+
 
     def work_audio_transfer_button_function(self):
-        self.tools_frame.tools_frame.hide()
-        self.audio_transfer_frame._setup_work_audio_transfer_frame_widgets()
-        self.audio_transfer_frame_functions._bind_functions()
 
-    def work_video_transfer_button_function(self):
-        pass
+        if self.current_show_frame == self.audio_transfer_frame:
+            return
 
-    def work_denoise_button_function(self):
-        pass
-        # self.tools_frame.hide()
-        # self.work_denoise_frame.show()
+        backend_function.clear_store_info()
+        self.change_frame(self.audio_transfer_frame, self.audio_transfer_frame_functions,
+                          self.tools_frame.tools_audio_transfer_button)
 
-    def work_split_button_function(self):
-        pass
+    def work_voice_split_button_function(self):
 
-    def work_back_button_function(self):
-        self.tools_frame.blank_widget.show()
-        self.widget_opacity = 0
-        self.mytimer = QTimer(self.tools_frame.blank_widget)
-        self.mytimer.timeout.connect(self.change_opacity)
-        self.mytimer.start(30)
+        if self.current_show_frame == self.voice_split_frame:
+            return
 
-    def change_opacity(self):
-        if self.widget_opacity >= 9:
-            self.mytimer.stop()
-            self.back_start_frame()
-            self.tools_frame.tools_frame.deleteLater()
-            self.tools_frame.blank_widget.deleteLater()
-        self.widget_opacity += 1
-        self.tools_frame.blank_widget.setStyleSheet("background-color: rgb(255, 255, 255, {});".format(self.widget_opacity/10))
+        backend_function.clear_store_info()
+        self.change_frame(self.voice_split_frame, self.voice_split_frame_functions,
+                          self.tools_frame.tools_voice_split_button)
 
-    def back_start_frame(self):
-        self.start_frame.blank_widget.setStyleSheet("""
-                                                    background-color: rgb(255, 255, 255, 0);
-                                                    """)
-        self.start_frame.blank_widget.hide()
-        self.start_frame.start_frame.show()
+
+    def work_bgm_split_button_function(self):
+
+        if self.current_show_frame == self.bgm_split_frame:
+            return
+
+        backend_function.clear_store_info()
+        self.change_frame(self.bgm_split_frame, self.bgm_split_frame_functions,
+                          self.tools_frame.tools_bgm_split_button)
+
+    #endRegion
+
+    def reset_button_qss(self):
+        self.tools_frame.tools_extract_button.setStyleSheet(self.origin_qss)
+        self.tools_frame.tools_audio_transfer_button.setStyleSheet(self.origin_qss)
+        self.tools_frame.tools_voice_split_button.setStyleSheet(self.origin_qss)
+        self.tools_frame.tools_bgm_split_button.setStyleSheet(self.origin_qss)
+
+    def change_frame(self, current_frame, current_frame_functions, tools_button):
+
+        self.last_show_frame = self.current_show_frame # todo 不知道会不会同时改变
+        self.current_show_frame = current_frame
+
+        self.reset_button_qss()
+        tools_button.setStyleSheet(self.selected_qss)
+
+        current_frame._setup_work_frame_frame_widgets()
+
+        if self.last_show_frame != None:
+            self.tools_frame.work_layout.removeWidget(self.last_show_frame.work_frame_frame)
+        self.tools_frame.work_layout.addWidget(current_frame.work_frame_frame)
+
+        current_frame_functions._bind_functions()
+
+
+
 
 
