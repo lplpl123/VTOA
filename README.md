@@ -11,12 +11,10 @@ VTOA是一个处理音频的windows桌面app。可实现音频提取、格式转
 
 官网(https://ffmpeg.org/)下载ffmpeg，将其解压到ffmpeg文件夹
 
-![img.png](img.png)
-
 
 执行main.py文件
-
-![img_1.png](img_1.png)
+![904ef3102f81b78f5b759c917e59fbc.png](GithubImages%2F904ef3102f81b78f5b759c917e59fbc.png)
+![aa1f6b0fe265dcd695829810335b871.png](GithubImages%2Faa1f6b0fe265dcd695829810335b871.png)
 
 # requirements
 * pyqt5
